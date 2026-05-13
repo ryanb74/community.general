@@ -14,6 +14,7 @@ description:
   - Manages OOB controller ex. reboot, log management.
   - Manages OOB controller users ex. add, remove, update.
   - Manages system power ex. on, off, graceful and forced reboot.
+  - Gets server POST state.
 extends_documentation_fragment:
   - community.general._attributes
   - community.general._redfish
@@ -778,6 +779,14 @@ EXAMPLES = r"""
     bios_attributes:
       SubNumaClustering: "Disabled"
       WorkloadProfile: "Virtualization-MaxPerformance"
+      
+- name: Get server POST state
+  community.general.redfish_command:
+    category: Systems
+    command: GetServerPostState
+    baseuri: "{{ baseuri }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
 """
 
 RETURN = r"""
@@ -793,6 +802,7 @@ return_values:
   version_added: 6.1.0
   sample:
     {
+      "server_poststate": "FinishedPost",
       "update_status": {
         "handle": "/redfish/v1/TaskService/TaskMonitors/735",
         "messages": [],
@@ -831,6 +841,7 @@ CATEGORY_COMMANDS_ALL = {
         "VirtualMediaInsert",
         "VirtualMediaEject",
         "VerifyBiosAttributes",
+        "GetServerPostState",
     ],
     "Chassis": ["IndicatorLedOn", "IndicatorLedOff", "IndicatorLedBlink"],
     "Accounts": [
@@ -1078,6 +1089,10 @@ def main():
                 result = rf_utils.virtual_media_eject(virtual_media, category)
             elif command == "VerifyBiosAttributes":
                 result = rf_utils.verify_bios_attributes(bios_attributes)
+            elif command == "GetServerPostState":
+                result = rf_utils.get_server_poststate()
+                if result["ret"] and "server_poststate" in result:
+                    return_values["server_poststate"] = result["server_poststate"]
 
     elif category == "Chassis":
         result = rf_utils._find_chassis_resource()

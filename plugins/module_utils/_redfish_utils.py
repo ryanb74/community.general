@@ -1198,6 +1198,21 @@ class RedfishUtils:
     def manage_system_power(self, command):
         return self.manage_power(command, self.systems_uri, "#ComputerSystem.Reset")
 
+    def get_server_poststate(self):
+        # Get server details
+        response = self.get_request(self.root_uri + self.systems_uri)
+        if not response["ret"]:
+            return response
+        server_data = response["data"]
+
+        if "Oem" in server_data:
+            if "Hpe" in server_data["Oem"]:
+                return {"ret": True, "server_poststate": server_data["Oem"]["Hpe"]["PostState"]}
+            if "Hp" in server_data["Oem"]:
+                return {"ret": True, "server_poststate": server_data["Oem"]["Hp"]["PostState"]}
+
+        return {"ret": False, "msg": "PostState not found in System resource"}
+
     def manage_manager_power(self, command, wait=False, wait_timeout=120):
         return self.manage_power(command, self.manager_uri, "#Manager.Reset", wait, wait_timeout)
 
