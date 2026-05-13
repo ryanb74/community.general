@@ -790,7 +790,7 @@ EXAMPLES = r"""
     bios_attributes:
       SubNumaClustering: "Disabled"
       WorkloadProfile: "Virtualization-MaxPerformance"
-      
+
 - name: Get server POST state
   community.general.redfish_command:
     category: Systems
