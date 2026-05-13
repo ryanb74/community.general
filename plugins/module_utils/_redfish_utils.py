@@ -3607,7 +3607,7 @@ class RedfishUtils:
         for sub in subsystems:
             d = None
             if sub.startswith("Links."):  # ex: Links.PCIeDevices
-                sub = sub[len("Links.") :]
+                sub = sub[len("Links."):]
                 d = data.get("Links", {})
             elif "." in sub:  # ex: Thermal.Fans
                 p, sub = sub.split(".")
