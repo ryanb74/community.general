@@ -331,6 +331,17 @@ EXAMPLES = r"""
     category: Systems
     command: PowerOn
     resource_id: 437XR1138R2
+    baseuri: "{{ baseuri }}"
+    username: "{{ username }}"
+    password: "{{ password }}"
+
+- name: Power on the server using certificate authentication
+  community.general.redfish_command:
+    category: Systems
+    command: PowerOn
+    baseuri: "{{ baseuri }}"
+    cert_file: /path/to/client.crt
+    key_file: /path/to/client.key
 
 - name: Reboot system power
   community.general.redfish_command:
@@ -819,6 +830,7 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.community.general.plugins.module_utils._redfish_utils import (
     REDFISH_COMMON_ARGUMENT_SPEC,
     RedfishUtils,
+    redfish_certificate_login,
 )
 
 # More will be added as module features are expanded
@@ -941,13 +953,14 @@ def main():
         argument_spec,
         required_together=[
             ("username", "password"),
+            ("cert_file", "key_file"),
             ("update_custom_oem_header", "update_custom_oem_params"),
         ],
         required_one_of=[
-            ("username", "auth_token"),
+            ("username", "auth_token", "cert_file"),
         ],
         mutually_exclusive=[
-            ("username", "auth_token"),
+            ("username", "auth_token", "cert_file"),
         ],
         supports_check_mode=False,
     )
@@ -955,8 +968,19 @@ def main():
     category = module.params["category"]
     command_list = module.params["command"]
 
+    # Build root URI
+    root_uri = f"https://{module.params['baseuri']}"
+
+    # timeout
+    timeout = module.params["timeout"]
+
     # admin credentials used for authentication
     creds = {"user": module.params["username"], "pswd": module.params["password"], "token": module.params["auth_token"]}
+
+    if module.params["cert_file"]:
+        creds["token"] = redfish_certificate_login(
+            root_uri, module, module.params["cert_file"], module.params["key_file"], timeout
+        )
 
     # user to add/modify/delete
     user = {
@@ -970,9 +994,6 @@ def main():
         "account_properties": module.params["account_properties"],
         "account_passwordchangerequired": None,
     }
-
-    # timeout
-    timeout = module.params["timeout"]
 
     # System, Manager or Chassis ID to modify
     resource_id = module.params["resource_id"]
@@ -1009,8 +1030,6 @@ def main():
     # BIOS Attributes options
     bios_attributes = module.params["bios_attributes"]
 
-    # Build root URI
-    root_uri = f"https://{module.params['baseuri']}"
     rf_utils = RedfishUtils(
         creds,
         root_uri,

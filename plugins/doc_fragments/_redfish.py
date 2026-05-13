@@ -23,6 +23,14 @@ options:
       - PEM formatted file that contains a CA certificate to be used for validation.
       - Only used if O(validate_certs=true).
     type: path
+  cert_file:
+    description:
+      - Absolute path to the client certificate file.
+    type: path
+  key_file:
+    description:
+      - Absolute path to the client key file.
+    type: path
   ciphers:
     required: false
     description:

@@ -47,11 +47,41 @@ REDFISH_COMMON_ARGUMENT_SPEC = {
     "ca_path": {
         "type": "path",
     },
+    "cert_file": {
+        "type": "path",
+    },
+    "key_file": {
+        "type": "path",
+    },
     "ciphers": {
         "type": "list",
         "elements": "str",
     },
 }
+
+
+def redfish_certificate_login(root_uri, module, cert_file, key_file, timeout):
+    if not os.path.exists(cert_file):
+        module.fail_json(msg=f"The client cert file does not exist in the provided path {cert_file}")
+    if not os.path.exists(key_file):
+        module.fail_json(msg=f"The client key file does not exist in the provided path {key_file}")
+
+    try:
+        # iLO specific certificate login endpoint
+        login_uri = f"{root_uri}/html/login_cert.html"
+        resp = open_url(
+            login_uri,
+            method="GET",
+            client_cert=cert_file,
+            client_key=key_file,
+            validate_certs=False,
+            timeout=timeout,
+            follow_redirects="all",
+        )
+        headers = {k.lower(): v for (k, v) in resp.info().items()}
+        return headers.get("x-auth-token")
+    except Exception as e:
+        module.fail_json(msg=f"Server login with certificates failed: {to_native(e)}")
 
 
 class RedfishUtils:
