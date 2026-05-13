@@ -1237,9 +1237,9 @@ class RedfishUtils:
 
         if "Oem" in server_data:
             if "Hpe" in server_data["Oem"]:
-                return {"ret": True, "server_poststate": server_data["Oem"]["Hpe"]["PostState"]}
+                return {"ret": True, "changed": False, "server_poststate": server_data["Oem"]["Hpe"]["PostState"]}
             if "Hp" in server_data["Oem"]:
-                return {"ret": True, "server_poststate": server_data["Oem"]["Hp"]["PostState"]}
+                return {"ret": True, "changed": False, "server_poststate": server_data["Oem"]["Hp"]["PostState"]}
 
         return {"ret": False, "msg": "PostState not found in System resource"}
 
