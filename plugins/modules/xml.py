@@ -144,6 +144,13 @@ options:
       - This parameter requires O(xpath) to be set.
     type: bool
     default: false
+  create_if_missing:
+    description:
+      - When using O(value) and the O(xpath) matches no nodes, create the node.
+      - When set to V(false), a no-match is silently ignored instead of creating a new node.
+    type: bool
+    default: true
+    version_added: "13.0.0"
 requirements:
   - lxml >= 2.3.0
 notes:
@@ -196,7 +203,7 @@ EXAMPLES = r"""
   community.general.xml:
     path: /foo/bar.xml
     xpath: /business/rating
-    value: 11
+    value: "11"  # must quote to ensure it is parsed as string
 
 # Retrieve and display the number of nodes
 - name: Get count of 'beers' nodes
@@ -355,7 +362,7 @@ count:
 matches:
   description: The xpath matches found.
   type: list
-  returned: when parameter O(print_match) is set
+  returned: when parameter O(print_match) is set, or when parameter O(content) is set
 xmlstring:
   description: An XML string of the resulting output.
   type: str
@@ -412,7 +419,7 @@ def do_print_match(module, tree, xpath, namespaces):
         match_xpaths.append(tree.getpath(m))
     match_str = json.dumps(match_xpaths)
     msg = f"selector '{xpath}' match: {match_str}"
-    finish(module, tree, xpath, namespaces, changed=False, msg=msg)
+    finish(module, tree, xpath, namespaces, changed=False, msg=msg, matches=match_xpaths)
 
 
 def count_nodes(module, tree, xpath, namespaces):
@@ -673,11 +680,13 @@ def ensure_xpath_exists(module, tree, xpath, namespaces):
     finish(module, tree, xpath, namespaces, changed)
 
 
-def set_target_inner(module, tree, xpath, namespaces, attribute, value):
+def set_target_inner(module, tree, xpath, namespaces, attribute, value, create_if_missing=True):
     changed = False
 
     try:
         if not is_node(tree, xpath, namespaces):
+            if not create_if_missing:
+                return changed
             changed = check_or_make_target(module, tree, xpath, namespaces)
     except Exception as e:
         missing_namespace = ""
@@ -722,8 +731,8 @@ def set_target_inner(module, tree, xpath, namespaces, attribute, value):
     return changed
 
 
-def set_target(module, tree, xpath, namespaces, attribute, value):
-    changed = set_target_inner(module, tree, xpath, namespaces, attribute, value)
+def set_target(module, tree, xpath, namespaces, attribute, value, create_if_missing):
+    changed = set_target_inner(module, tree, xpath, namespaces, attribute, value, create_if_missing)
     finish(module, tree, xpath, namespaces, changed)
 
 
@@ -804,9 +813,15 @@ def children_to_nodes(module=None, children=None, type="yaml"):
 
 
 def make_pretty(module, tree):
-    xml_string = etree.tostring(
-        tree, xml_declaration=True, encoding="UTF-8", pretty_print=module.params["pretty_print"]
+    buf = BytesIO()
+    tree.write(
+        buf,
+        xml_declaration=True,
+        encoding="UTF-8",
+        pretty_print=module.params["pretty_print"],
+        doctype=tree.docinfo.doctype or None,
     )
+    xml_string = buf.getvalue()
 
     result = dict(
         changed=False,
@@ -821,7 +836,11 @@ def make_pretty(module, tree):
                     if module.params["backup"]:
                         result["backup_file"] = module.backup_local(module.params["path"])
                     tree.write(
-                        xml_file, xml_declaration=True, encoding="UTF-8", pretty_print=module.params["pretty_print"]
+                        xml_file,
+                        xml_declaration=True,
+                        encoding="UTF-8",
+                        pretty_print=module.params["pretty_print"],
+                        doctype=tree.docinfo.doctype or None,
                     )
 
     elif module.params["xmlstring"]:
@@ -850,10 +869,23 @@ def finish(module, tree, xpath, namespaces, changed=False, msg="", hitcount=0, m
 
     if result["changed"]:
         if module._diff:
-            result["diff"] = dict(
-                before=etree.tostring(orig_doc, xml_declaration=True, encoding="UTF-8", pretty_print=True),
-                after=etree.tostring(tree, xml_declaration=True, encoding="UTF-8", pretty_print=True),
+            before_buf = BytesIO()
+            orig_doc.write(
+                before_buf,
+                xml_declaration=True,
+                encoding="UTF-8",
+                pretty_print=True,
+                doctype=orig_doc.docinfo.doctype or None,
             )
+            after_buf = BytesIO()
+            tree.write(
+                after_buf,
+                xml_declaration=True,
+                encoding="UTF-8",
+                pretty_print=True,
+                doctype=tree.docinfo.doctype or None,
+            )
+            result["diff"] = dict(before=before_buf.getvalue(), after=after_buf.getvalue())
 
         if module.params["path"] and not module.check_mode:
             if module.params["backup"]:
@@ -863,12 +895,19 @@ def finish(module, tree, xpath, namespaces, changed=False, msg="", hitcount=0, m
                 xml_declaration=True,
                 encoding="UTF-8",
                 pretty_print=module.params["pretty_print"],
+                doctype=tree.docinfo.doctype or None,
             )
 
     if module.params["xmlstring"]:
-        result["xmlstring"] = etree.tostring(
-            tree, xml_declaration=True, encoding="UTF-8", pretty_print=module.params["pretty_print"]
+        xmlstring_buf = BytesIO()
+        tree.write(
+            xmlstring_buf,
+            xml_declaration=True,
+            encoding="UTF-8",
+            pretty_print=module.params["pretty_print"],
+            doctype=tree.docinfo.doctype or None,
         )
+        result["xmlstring"] = xmlstring_buf.getvalue()
 
     module.exit_json(**result)
 
@@ -895,6 +934,7 @@ def main():
             huge_tree=dict(type="bool", default=False),
             insertbefore=dict(type="bool", default=False),
             insertafter=dict(type="bool", default=False),
+            create_if_missing=dict(type="bool", default=True),
         ),
         supports_check_mode=True,
         required_by=dict(
@@ -939,6 +979,7 @@ def main():
     huge_tree = module.params["huge_tree"]
     insertbefore = module.params["insertbefore"]
     insertafter = module.params["insertafter"]
+    create_if_missing = module.params["create_if_missing"]
 
     # Check if we have lxml 2.3.0 or newer installed
     if not HAS_LXML:
@@ -1014,7 +1055,7 @@ def main():
 
     # Is the xpath target an attribute selector?
     if value is not None:
-        set_target(module, doc, xpath, namespaces, attribute, value)
+        set_target(module, doc, xpath, namespaces, attribute, value, create_if_missing)
 
     # If an xpath was provided, we need to do something with the data
     if xpath is not None:

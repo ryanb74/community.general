@@ -159,6 +159,10 @@ files:
     maintainers: Ajpantuso
   $filters/from_ini.py:
     maintainers: sscheib
+  $filters/from_toml.py:
+    maintainers: spike77453
+  $filters/from_toml.yml:
+    maintainers: spike77453
   $filters/groupby_as_dict.py:
     maintainers: felixfontein
   $filters/hashids.py:
@@ -385,6 +389,8 @@ files:
     maintainers: $team_keycloak
   $module_utils/_keycloak.py:
     maintainers: $team_keycloak
+  $module_utils/_kopia.py:
+    maintainers: munchtoast
   $module_utils/_lxc.py:
     maintainers: russoz
   $module_utils/_lxca_common.py:
@@ -402,6 +408,8 @@ files:
     maintainers: russoz
   $module_utils/_module_helper.py:
     labels: module_helper
+    maintainers: russoz
+  $module_utils/_nomad.py:
     maintainers: russoz
   $module_utils/_pritunl_api.py:
     maintainers: Lowess
@@ -666,6 +674,10 @@ files:
     maintainers: pixslx
   $modules/gitlab_project_access_token.py:
     maintainers: pixslx
+  $modules/gitlab_project_approvals.py:
+    maintainers: masa-orca
+  $modules/golang_package.py:
+    maintainers: shrbhosa
   $modules/grove.py:
     maintainers: zimbatm
   $modules/gunicorn.py:
@@ -849,6 +861,8 @@ files:
     maintainers: Gaetan2907
   $modules/keycloak_client_rolescope.py:
     maintainers: desand01
+  $modules/keycloak_clientscope_rolemappings.py:
+    maintainers: felix-grzelka
   $modules/keycloak_clientscope.py:
     maintainers: Gaetan2907
   $modules/keycloak_clientscope_type.py:
@@ -875,6 +889,8 @@ files:
     maintainers: danekja
   $modules/keycloak_realm_rolemapping.py:
     maintainers: agross mhuysamen Gaetan2907
+  $modules/keycloak_realm_users_info.py:
+    maintainers: felix-grzelka
   $modules/keycloak_role.py:
     maintainers: laurpaum
   $modules/keycloak_user.py:
@@ -893,6 +909,10 @@ files:
     maintainers: ahussey-redhat
   $modules/kibana_plugin.py:
     maintainers: barryib
+  $modules/kopia_repository_info.py:
+    maintainers: munchtoast
+  $modules/kopia_repository.py:
+    maintainers: munchtoast
   $modules/krb_ticket.py:
     maintainers: abakanovskii
   $modules/launchd.py:
@@ -1389,7 +1409,7 @@ files:
   $modules/twilio.py:
     maintainers: makaimc
   $modules/udm_:
-    maintainers: keachi
+    ignore: keachi
   $modules/ufw.py:
     labels: ufw
     maintainers: ahtik ovcharenko pyykkis
@@ -1420,6 +1440,9 @@ files:
   $modules/utm_proxy_exception.py:
     keywords: sophos utm
     maintainers: $team_e_spirit RickS-C137
+  $modules/uv_python.py:
+    keywords: uv python
+    maintainers: mriamah
   $modules/vdo.py:
     maintainers: rhawalsh bgurney-rh
   $modules/vertica_:
@@ -1501,6 +1524,8 @@ files:
     maintainers: vbotka
   $plugin_utils/_keys_filter.py:
     maintainers: vbotka
+  $plugin_utils/_lookup.py:
+    maintainers: felixfontein
   $plugin_utils/_unsafe.py:
     maintainers: felixfontein
   $plugin_utils/_tags.py:
